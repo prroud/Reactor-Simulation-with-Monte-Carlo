@@ -5,7 +5,9 @@ from physics import (
     random_position_in_sphere,
     random_unit_vector,
     move_neutron,
-    is_inside_reactor
+    is_inside_reactor,
+    check_collision,
+    handle_interaction
 )
 
 from config import (
@@ -42,9 +44,9 @@ def create_nuclei():
     return nuclei
 
 
-def run_transport(neutrons):
+def run_transport_and_reactions(neutrons, nuclei):
     for step in range(MAX_STEPS):
-        alive_neutrons = []
+        new_neutrons = []
 
         for n in neutrons:
             if not n.alive:
@@ -52,12 +54,18 @@ def run_transport(neutrons):
             
             n.position = move_neutron(n.position, n.direction)
 
-            if is_inside_reactor(n.position):
-                alive_neutrons.append(n)
-            else:
+            if not is_inside_reactor(n.position):
                 n.alive = False
+                continue
+            
+            if check_collision(n.position, nuclei):
+                handle_interaction(n, new_neutrons)
+                n.alive = False
+            
+            else:
+                new_neutrons.append(n)
         
-        neutrons = alive_neutrons
+        neutrons = new_neutrons
 
         print(f"Krok {step}: neutrony = {len(neutrons)}")
 
