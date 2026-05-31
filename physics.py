@@ -46,9 +46,9 @@ def check_collision(neutron_pos, nuclei):
         dist = np.linalg.norm(neutron_pos - nucleus.position)
 
         if dist < NUCLEUS_INTERACTION_RADIUS:
-            return True
+            return nucleus
     
-    return False
+    return None
 
 def handle_interaction(neutron, neutrons_list):
     r = np.random.random()
