@@ -3,13 +3,17 @@ from nucleus import Nucleus
 
 from physics import (
     random_position_in_sphere,
-    random_unit_vector
+    random_unit_vector,
+    move_neutron,
+    is_inside_reactor
 )
 
 from config import (
     INITIAL_NEUTRONS,
-    NUM_NUCLEI
+    NUM_NUCLEI,
+    MAX_STEPS
 )
+
 
 def create_initial_neutrons():
     neutrons = []
@@ -24,6 +28,7 @@ def create_initial_neutrons():
     
     return neutrons
 
+
 def create_nuclei():
     nuclei = []
 
@@ -35,3 +40,29 @@ def create_nuclei():
         )
 
     return nuclei
+
+
+def run_transport(neutrons):
+    for step in range(MAX_STEPS):
+        alive_neutrons = []
+
+        for n in neutrons:
+            if not n.alive:
+                continue
+            
+            n.position = move_neutron(n.position, n.direction)
+
+            if is_inside_reactor(n.position):
+                alive_neutrons.append(n)
+            else:
+                n.alive = False
+        
+        neutrons = alive_neutrons
+
+        print(f"Krok {step}: neutrony = {len(neutrons)}")
+
+        if len(neutrons) == 0:
+            print("Reakcja wygasła")
+            break
+    
+    return neutrons
