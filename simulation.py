@@ -72,7 +72,6 @@ def run_transport_and_reactions(initial_neutrons, nuclei):
 
         for n in neutrons_current:
 
-            # --- transport ---
             n.position = move_neutron(n.position, n.direction)
 
             if not is_inside_reactor(n.position):
@@ -81,27 +80,22 @@ def run_transport_and_reactions(initial_neutrons, nuclei):
 
             collided_index = check_collision(n.position, nuclei)
 
-            # --- no collision ---
             if collided_index is None:
                 neutrons_next.append(n)
                 continue
 
-            # --- reaction sampling ---
             r = np.random.random()
 
-            # absorption
             if r < P_ABSORPTION:
                 absorptions += 1
                 continue
 
-            # scattering
             elif r < P_ABSORPTION + P_SCATTER:
                 scatterings += 1
                 n.direction = random_unit_vector()
                 neutrons_next.append(n)
                 continue
 
-            # fission
             else:
                 fissions += 1
 
@@ -115,21 +109,18 @@ def run_transport_and_reactions(initial_neutrons, nuclei):
                         )
                     )
 
-        # --- k_eff estimator (power iteration) ---
         if len(neutrons_current) > 0:
             k_step = len(neutrons_next) / len(neutrons_current)
             k_estimates.append(k_step)
 
         neutrons_current = neutrons_next
 
-        # --- history ---
         history["neutrons"].append(len(neutrons_current))
         history["k_eff"].append(k_step if len(neutrons_current) > 0 else 0)
         history["fissions"].append(fissions)
         history["absorptions"].append(absorptions)
         history["scatterings"].append(scatterings)
 
-        # --- termination ---
         if len(neutrons_current) == 0:
             print("Chain died out")
             break
