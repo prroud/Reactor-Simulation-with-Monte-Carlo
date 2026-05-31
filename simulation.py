@@ -45,7 +45,9 @@ def create_nuclei():
 
 
 def run_transport_and_reactions(neutrons, nuclei):
-    total_interactions = 0
+    fissions = 0
+    absorptions = 0
+    scatterings = 0
 
     for step in range(MAX_STEPS):
         new_neutrons = []
@@ -64,11 +66,17 @@ def run_transport_and_reactions(neutrons, nuclei):
 
             if collided_index is not None:
 
-                handle_interaction(n, new_neutrons)
+                reaction = handle_interaction(n, new_neutrons)
 
-                nuclei.pop(collided_index)
+                if reaction == "fission":
+                    nuclei.pop(collided_index)
+                    fissions += 1
 
-                total_interactions += 1
+                elif reaction == "absorption":
+                    absorptions += 1
+
+                elif reaction == "scatter":
+                    scatterings += 1
 
                 n.alive = False
 
@@ -79,9 +87,11 @@ def run_transport_and_reactions(neutrons, nuclei):
 
         print(
             f"Krok {step}: "
-            f"neutrony={len(neutrons)}, "
-            f"jądra={len(nuclei)}, "
-            f"interakcje={total_interactions}"
+            f"n={len(neutrons)}, "
+            f"j={len(nuclei)}, "
+            f"f={fissions}, "
+            f"a={absorptions}, "
+            f"s={scatterings}"
         )
 
         if len(neutrons) == 0:

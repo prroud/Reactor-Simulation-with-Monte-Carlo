@@ -55,11 +55,11 @@ def handle_interaction(neutron, neutrons_list):
 
     if r < P_ABSORPTION:
         neutron.alive = False
-        return
+        return "absorption"
     
     elif r < P_ABSORPTION + P_SCATTER:
         neutron.direction = random_unit_vector()
-        return
+        return "scatter"
     
     else:
         neutron.alive = False
@@ -73,5 +73,7 @@ def handle_interaction(neutron, neutrons_list):
                     direction = random_unit_vector()
                 )
             )
+        
+        return "fission"
 
 
