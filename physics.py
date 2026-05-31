@@ -29,3 +29,7 @@ def move_neutron(position, direction):
     return position + direction * step
 
 
+def is_inside_reactor(position):
+    return np.linalg.norm(position) <= REACTOR_RADIUS
+
+
