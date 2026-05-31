@@ -21,7 +21,7 @@ def create_initial_neutrons():
     for _ in range(INITIAL_NEUTRONS):
         neutrons.append(
             Neutron(
-                position = random_position_in_sphere,
+                position = random_position_in_sphere(),
                 direction = random_unit_vector()
             )
         )
