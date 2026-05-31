@@ -93,8 +93,8 @@ def run_transport_and_reactions(neutrons, nuclei):
         
         neutrons = new_neutrons
 
-        history["neutrons"].append(neutrons)
-        history["nuclei"].append(nuclei)
+        history["neutrons"].append(len(neutrons))
+        history["nuclei"].append(len(nuclei))
         history["fissions"].append(fissions)
         history["absorptions"].append(absorptions)
         history["scatterings"].append(scatterings)
