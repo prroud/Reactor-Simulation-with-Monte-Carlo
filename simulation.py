@@ -51,7 +51,6 @@ def create_nuclei():
 
 def run_transport_and_reactions(initial_neutrons, nuclei):
     history = {
-        "positions": [],
         "neutrons": [],
         "k_eff": [],
         "fissions": [],
@@ -118,12 +117,6 @@ def run_transport_and_reactions(initial_neutrons, nuclei):
 
         neutrons_current = neutrons_next
 
-        if len(neutrons_current) > 0:
-            positions = np.array([n.position.copy() for n in neutrons_current])
-        else:
-            positions = np.empty((0, 3))
-        
-        history["positions"].append(positions)
         history["neutrons"].append(len(neutrons_current))
         history["k_eff"].append(k_step if len(neutrons_current) > 0 else 0)
         history["fissions"].append(fissions)
