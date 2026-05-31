@@ -15,7 +15,10 @@ from physics import (
 from config import (
     INITIAL_NEUTRONS,
     NUM_NUCLEI,
-    MAX_STEPS
+    MAX_STEPS,
+    P_ABSORPTION,
+    P_SCATTER,
+    MEAN_SECONDARY_NEUTRONS
 )
 
 
@@ -46,10 +49,10 @@ def create_nuclei():
     return nuclei
 
 
-def run_transport_and_reactions(neutrons, nuclei):
+def run_transport_and_reactions(initial_neutrons, nuclei):
     history = {
-        "neutrons" : [],
-        "nuclei": [],
+        "neutrons": [],
+        "k_eff": [],
         "fissions": [],
         "absorptions": [],
         "scatterings": []
@@ -58,63 +61,81 @@ def run_transport_and_reactions(neutrons, nuclei):
     fissions = 0
     absorptions = 0
     scatterings = 0
-    
-    initial_neutrons = len(neutrons)
-    produced_neutrons_total = 0
+    leakage = 0
 
-    for step in range(MAX_STEPS):
-        new_neutrons = []
+    neutrons_current = initial_neutrons
+    k_estimates = []
 
-        for n in neutrons:
-            if not n.alive:
-                continue
-            
+    for generation in range(MAX_STEPS):
+
+        neutrons_next = []
+
+        for n in neutrons_current:
+
+            # --- transport ---
             n.position = move_neutron(n.position, n.direction)
 
             if not is_inside_reactor(n.position):
-                n.alive = False
+                leakage += 1
                 continue
-            
+
             collided_index = check_collision(n.position, nuclei)
 
-            if collided_index is not None:
+            # --- no collision ---
+            if collided_index is None:
+                neutrons_next.append(n)
+                continue
 
-                reaction = handle_interaction(n, new_neutrons)
+            # --- reaction sampling ---
+            r = np.random.random()
 
-                if reaction == "fission":
-                    nuclei.pop(collided_index)
-                    fissions += 1
-                    n.alive = False
+            # absorption
+            if r < P_ABSORPTION:
+                absorptions += 1
+                continue
 
-                elif reaction == "absorption":
-                    absorptions += 1
-                    n.alive = False
+            # scattering
+            elif r < P_ABSORPTION + P_SCATTER:
+                scatterings += 1
+                n.direction = random_unit_vector()
+                neutrons_next.append(n)
+                continue
 
-                elif reaction == "scatter":
-                    scatterings += 1
-                    new_neutrons.append(n)
-                
-                if reaction in ("fission", "absorption"):
-                    n.alive = False
-
+            # fission
             else:
-                new_neutrons.append(n)
-        produced_neutrons_total += len(new_neutrons)
+                fissions += 1
 
-        neutrons = new_neutrons
+                n_new = np.random.poisson(MEAN_SECONDARY_NEUTRONS)
 
-        history["neutrons"].append(len(neutrons))
-        history["nuclei"].append(len(nuclei))
+                for _ in range(n_new):
+                    neutrons_next.append(
+                        Neutron(
+                            position=n.position.copy(),
+                            direction=random_unit_vector()
+                        )
+                    )
+
+        # --- k_eff estimator (power iteration) ---
+        if len(neutrons_current) > 0:
+            k_step = len(neutrons_next) / len(neutrons_current)
+            k_estimates.append(k_step)
+
+        neutrons_current = neutrons_next
+
+        # --- history ---
+        history["neutrons"].append(len(neutrons_current))
+        history["k_eff"].append(k_step if len(neutrons_current) > 0 else 0)
         history["fissions"].append(fissions)
         history["absorptions"].append(absorptions)
         history["scatterings"].append(scatterings)
 
-        if len(neutrons) == 0:
-            print("Reakcja wygasła")
+        # --- termination ---
+        if len(neutrons_current) == 0:
+            print("Chain died out")
             break
-    
-    k_eff = produced_neutrons_total / initial_neutrons
-    
+
+    k_eff = np.mean(k_estimates) if k_estimates else 0
+
     return history, k_eff, fissions, absorptions, scatterings
 
 def run_monte_carlo(n_runs = 100):
