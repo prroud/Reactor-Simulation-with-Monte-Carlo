@@ -1,15 +1,12 @@
 from simulation import (
     create_initial_neutrons,
     create_nuclei,
-    run_transport_and_reactions
+    run_transport_and_reactions,
+    run_monte_carlo
 )
 
-from plot import plot_history
+from plot import plot_monte_carlo_results
 
-neutrons = create_initial_neutrons()
-nuclei = create_nuclei()
+results = run_monte_carlo(100)
 
-history = run_transport_and_reactions(neutrons, nuclei)
-
-plot_history(history)
-print("Koniec symulacji")
+plot_monte_carlo_results(results)
