@@ -45,6 +45,14 @@ def create_nuclei():
 
 
 def run_transport_and_reactions(neutrons, nuclei):
+    history = {
+        "neutrons" : [],
+        "nuclei": [],
+        "fissions": [],
+        "absorptions": [],
+        "scatterings": []
+    }
+
     fissions = 0
     absorptions = 0
     scatterings = 0
@@ -85,6 +93,12 @@ def run_transport_and_reactions(neutrons, nuclei):
         
         neutrons = new_neutrons
 
+        history["neutrons"].append(neutrons)
+        history["nuclei"].append(nuclei)
+        history["fissions"].append(fissions)
+        history["absorptions"].append(absorptions)
+        history["scatterings"].append(scatterings)
+
         print(
             f"Krok {step}: "
             f"n={len(neutrons)}, "
@@ -98,4 +112,4 @@ def run_transport_and_reactions(neutrons, nuclei):
             print("Reakcja wygasła")
             break
     
-    return neutrons
+    return history
