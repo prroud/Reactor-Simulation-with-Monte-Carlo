@@ -25,4 +25,11 @@ def plot_history(history):
     plt.ylabel("Liczba zdarzeń")
     plt.legend()
 
+    plt.figure()
+    plt.plot(range(len(history["k_eff"])), history["k_eff"])
+    plt.title("Współczynnik mnożenia")
+    plt.xlabel("Krok symulacji")
+    plt.ylabel("k_eff")
+    plt.axhline(1.0, linestyle="--")
+
     plt.show()

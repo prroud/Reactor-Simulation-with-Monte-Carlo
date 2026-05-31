@@ -50,12 +50,14 @@ def run_transport_and_reactions(neutrons, nuclei):
         "nuclei": [],
         "fissions": [],
         "absorptions": [],
-        "scatterings": []
+        "scatterings": [],
+        "k_eff": []
     }
 
     fissions = 0
     absorptions = 0
     scatterings = 0
+    prev_neutrons = len(neutrons)
 
     for step in range(MAX_STEPS):
         new_neutrons = []
@@ -93,11 +95,21 @@ def run_transport_and_reactions(neutrons, nuclei):
         
         neutrons = new_neutrons
 
+        current_neutrons = len(neutrons)
+
         history["neutrons"].append(len(neutrons))
         history["nuclei"].append(len(nuclei))
         history["fissions"].append(fissions)
         history["absorptions"].append(absorptions)
         history["scatterings"].append(scatterings)
+
+        if prev_neutrons > 0:
+            k_eff = current_neutrons / prev_neutrons
+        else:
+            k_eff = 0
+        
+        history["k_eff"].append(k_eff)
+        prev_neutrons = current_neutrons
 
         print(
             f"Krok {step}: "
@@ -105,7 +117,8 @@ def run_transport_and_reactions(neutrons, nuclei):
             f"j={len(nuclei)}, "
             f"f={fissions}, "
             f"a={absorptions}, "
-            f"s={scatterings}"
+            f"s={scatterings}, "
+            f"k_eff={k_eff:.3f}"
         )
 
         if len(neutrons) == 0:
