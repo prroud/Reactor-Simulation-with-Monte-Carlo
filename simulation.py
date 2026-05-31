@@ -60,13 +60,13 @@ def run_transport_and_reactions(neutrons, nuclei):
                 n.alive = False
                 continue
             
-            collided_nucleus = check_collision(n.position, nuclei)
+            collided_index = check_collision(n.position, nuclei)
 
-            if collided_nucleus is not None:
+            if collided_index is not None:
 
                 handle_interaction(n, new_neutrons)
 
-                nuclei.remove(collided_nucleus)
+                nuclei.pop(collided_index)
 
                 total_interactions += 1
 

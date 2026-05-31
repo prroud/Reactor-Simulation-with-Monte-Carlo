@@ -42,11 +42,11 @@ def is_inside_reactor(position):
 
 
 def check_collision(neutron_pos, nuclei):
-    for nucleus in nuclei:
+    for i, nucleus in enumerate(nuclei):
         dist = np.linalg.norm(neutron_pos - nucleus.position)
 
         if dist < NUCLEUS_INTERACTION_RADIUS:
-            return nucleus
+            return i
     
     return None
 
