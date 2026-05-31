@@ -45,6 +45,8 @@ def create_nuclei():
 
 
 def run_transport_and_reactions(neutrons, nuclei):
+    total_interactions = 0
+
     for step in range(MAX_STEPS):
         new_neutrons = []
 
@@ -58,16 +60,29 @@ def run_transport_and_reactions(neutrons, nuclei):
                 n.alive = False
                 continue
             
-            if check_collision(n.position, nuclei):
+            collided_nucleus = check_collision(n.position, nuclei)
+
+            if collided_nucleus is not None:
+
                 handle_interaction(n, new_neutrons)
+
+                nuclei.remove(collided_nucleus)
+
+                total_interactions += 1
+
                 n.alive = False
-            
+
             else:
                 new_neutrons.append(n)
         
         neutrons = new_neutrons
 
-        print(f"Krok {step}: neutrony = {len(neutrons)}")
+        print(
+            f"Krok {step}: "
+            f"neutrony={len(neutrons)}, "
+            f"jądra={len(nuclei)}, "
+            f"interakcje={total_interactions}"
+        )
 
         if len(neutrons) == 0:
             print("Reakcja wygasła")
