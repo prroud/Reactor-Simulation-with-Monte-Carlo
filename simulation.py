@@ -61,7 +61,6 @@ def run_transport_and_reactions(initial_neutrons, nuclei):
     fissions = 0
     absorptions = 0
     scatterings = 0
-    leakage = 0
 
     neutrons_current = initial_neutrons
     k_estimates = []
@@ -75,7 +74,6 @@ def run_transport_and_reactions(initial_neutrons, nuclei):
             n.position = move_neutron(n.position, n.direction)
 
             if not is_inside_reactor(n.position):
-                leakage += 1
                 continue
 
             collided_index = check_collision(n.position, nuclei)
