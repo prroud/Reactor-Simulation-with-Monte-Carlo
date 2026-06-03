@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.spatial import cKDTree
 
 from neutron import Neutron
 from nucleus import Nucleus
@@ -8,155 +9,98 @@ from physics import (
     random_unit_vector,
     move_neutron,
     is_inside_reactor,
-    check_collision,
     handle_interaction
 )
 
 from config import (
     INITIAL_NEUTRONS,
     NUM_NUCLEI,
-    MAX_STEPS,
-    P_ABSORPTION,
-    P_SCATTER,
-    MEAN_SECONDARY_NEUTRONS
+    NUCLEUS_INTERACTION_RADIUS,
+    MAX_NEUTRONS,
+    TRAIL_LIFETIME,
+    MAX_TRAIL_PER_NEUTRON
 )
 
 
-def create_initial_neutrons():
+# -------------------------
+# INIT
+# -------------------------
+
+def create_initial_neutrons(next_id=0):
     neutrons = []
 
     for _ in range(INITIAL_NEUTRONS):
         neutrons.append(
             Neutron(
-                position = random_position_in_sphere(),
-                direction = random_unit_vector()
+                id=next_id,
+                position=random_position_in_sphere(),
+                direction=random_unit_vector()
             )
         )
-    
-    return neutrons
+        next_id += 1
+
+    return neutrons, next_id
 
 
 def create_nuclei():
-    nuclei = []
+    nuclei = [
+        Nucleus(position=random_position_in_sphere())
+        for _ in range(NUM_NUCLEI)
+    ]
 
-    for _ in range(NUM_NUCLEI):
-        nuclei.append(
-            Nucleus(
-                position = random_position_in_sphere()
-            )
+    tree = cKDTree(np.array([n.position for n in nuclei]))
+
+    return nuclei, tree
+
+
+# -------------------------
+# STEP SIMULATION
+# -------------------------
+
+def run_transport_step(neutrons, tree, next_id, trajectories):
+
+    new_neutrons = []
+    current_positions = []
+
+    for n in neutrons:
+
+        n.position = move_neutron(n.position, n.direction)
+
+        if not is_inside_reactor(n.position):
+            continue
+
+        # trajektoria (pos, life)
+        traj = trajectories.setdefault(n.id, [])
+        traj.append((n.position.copy(), TRAIL_LIFETIME))
+
+        current_positions.append(n.position.copy())
+
+        reaction, next_id = handle_interaction(
+            n,
+            new_neutrons,
+            next_id
         )
 
-    return nuclei
+        if reaction == "scatter":
+            new_neutrons.append(n)
 
+    # limit neutronów
+    if len(new_neutrons) > MAX_NEUTRONS:
+        new_neutrons = new_neutrons[:MAX_NEUTRONS]
 
-def run_transport_and_reactions(initial_neutrons, nuclei):
-    history = {
-        "neutrons": [],
-        "k_eff": [],
-        "fissions": [],
-        "absorptions": [],
-        "scatterings": []
-    }
+    # wygaszanie trajektorii
+    for tid in list(trajectories.keys()):
+        new_traj = []
 
-    fissions = 0
-    absorptions = 0
-    scatterings = 0
+        for pos, life in trajectories[tid]:
+            life -= 1
+            if life > 0:
+                new_traj.append((pos, life))
 
-    neutrons_current = initial_neutrons
-    k_estimates = []
+        trajectories[tid] = new_traj
 
-    for generation in range(MAX_STEPS):
+        # limit długości
+        if len(trajectories[tid]) > MAX_TRAIL_PER_NEUTRON:
+            trajectories[tid] = trajectories[tid][-MAX_TRAIL_PER_NEUTRON:]
 
-        neutrons_next = []
-
-        for n in neutrons_current:
-
-            n.position = move_neutron(n.position, n.direction)
-
-            if not is_inside_reactor(n.position):
-                continue
-
-            collided_index = check_collision(n.position, nuclei)
-
-            if collided_index is None:
-                neutrons_next.append(n)
-                continue
-
-            r = np.random.random()
-
-            if r < P_ABSORPTION:
-                absorptions += 1
-                continue
-
-            elif r < P_ABSORPTION + P_SCATTER:
-                scatterings += 1
-                n.direction = random_unit_vector()
-                neutrons_next.append(n)
-                continue
-
-            else:
-                fissions += 1
-
-                n_new = np.random.poisson(MEAN_SECONDARY_NEUTRONS)
-
-                for _ in range(n_new):
-                    neutrons_next.append(
-                        Neutron(
-                            position=n.position.copy(),
-                            direction=random_unit_vector()
-                        )
-                    )
-
-        if len(neutrons_current) > 0:
-            k_step = len(neutrons_next) / len(neutrons_current)
-            k_estimates.append(k_step)
-        else:
-            k_step = 0
-
-        neutrons_current = neutrons_next
-
-        history["neutrons"].append(len(neutrons_current))
-        history["k_eff"].append(k_step if len(neutrons_current) > 0 else 0)
-        history["fissions"].append(fissions)
-        history["absorptions"].append(absorptions)
-        history["scatterings"].append(scatterings)
-
-        if len(neutrons_current) == 0:
-            print("Chain died out")
-            break
-
-    k_eff = np.mean(k_estimates) if k_estimates else 0
-
-    return history, k_eff, fissions, absorptions, scatterings
-
-def run_monte_carlo(n_runs = 100):
-    k_values = []
-    final_fissions = []
-    final_absorptions = []
-    final_scatterings = []
-
-    for i in range(n_runs):
-        neutrons = create_initial_neutrons()
-        nuclei = create_nuclei()
-
-        _, k_eff, f, a, s = run_transport_and_reactions(neutrons, nuclei)
-
-        k_values.append(k_eff)
-        final_fissions.append(f)
-        final_absorptions.append(a)
-        final_scatterings.append(s)
-
-        print(f"Run {i}: k_eff={k_eff:.4f}, f={f}, a={a}, s={s}")
-    
-    results = {
-        "k_eff": np.array(k_values),
-        "fissions": np.array(final_fissions),
-        "absorptions": np.array(final_absorptions),
-        "scatterings": np.array(final_scatterings),
-    }
-    print("\n=== MONTE CARLO SUMMARY ===")
-    print(f"Average k_eff: {results['k_eff'].mean():.4f}")
-    print(f"Std k_eff: {results['k_eff'].std():.4f}")
-    print(f"Runs: {n_runs}")
-
-    return results
+    return new_neutrons, next_id, current_positions

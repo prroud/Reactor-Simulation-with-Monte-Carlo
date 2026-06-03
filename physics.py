@@ -2,38 +2,29 @@ import numpy as np
 from config import (
     REACTOR_RADIUS,
     MEAN_FREE_PATH,
-    NUCLEUS_INTERACTION_RADIUS,
-    P_FISSION,
     P_ABSORPTION,
     P_SCATTER,
-    MEAN_SECONDARY_NEUTRONS
+    MEAN_SECONDARY_NEUTRONS,
+    MAX_SECONDARY_NEUTRONS
 )
 
 from neutron import Neutron
 
 
-
-def random_unit_vector() -> np.ndarray:
-    vector = np.random.normal(size = 3)
-
-    return vector / np.linalg.norm(vector)
+def random_unit_vector():
+    v = np.random.normal(size=3)
+    return v / np.linalg.norm(v)
 
 
-def random_position_in_sphere(radius = REACTOR_RADIUS):
+def random_position_in_sphere(radius=REACTOR_RADIUS):
     while True:
-        point = np.random.uniform(
-            -radius,
-            radius,
-            size = 3
-        )
+        p = np.random.uniform(-radius, radius, size=3)
+        if np.linalg.norm(p) <= radius:
+            return p
 
-        if np.linalg.norm(point) <= radius:
-            return point
-        
 
 def move_neutron(position, direction):
     step = np.random.exponential(MEAN_FREE_PATH)
-
     return position + direction * step
 
 
@@ -41,39 +32,31 @@ def is_inside_reactor(position):
     return np.linalg.norm(position) <= REACTOR_RADIUS
 
 
-def check_collision(neutron_pos, nuclei):
-    for i, nucleus in enumerate(nuclei):
-        dist = np.linalg.norm(neutron_pos - nucleus.position)
-
-        if dist < NUCLEUS_INTERACTION_RADIUS:
-            return i
-    
-    return None
-
-def handle_interaction(neutron, neutrons_list):
+def handle_interaction(neutron, neutrons_list, next_id):
     r = np.random.random()
 
     if r < P_ABSORPTION:
         neutron.alive = False
-        return "absorption"
-    
+        return "absorption", next_id
+
     elif r < P_ABSORPTION + P_SCATTER:
         neutron.direction = random_unit_vector()
-        return "scatter"
-    
+        return "scatter", next_id
+
     else:
         neutron.alive = False
 
         n_new = np.random.poisson(MEAN_SECONDARY_NEUTRONS)
+        n_new = min(n_new, MAX_SECONDARY_NEUTRONS)
 
         for _ in range(n_new):
             neutrons_list.append(
                 Neutron(
-                    position = neutron.position.copy(),
-                    direction = random_unit_vector()
+                    id=next_id,
+                    position=neutron.position.copy(),
+                    direction=random_unit_vector()
                 )
             )
-        
-        return "fission"
+            next_id += 1
 
-
+        return "fission", next_id
