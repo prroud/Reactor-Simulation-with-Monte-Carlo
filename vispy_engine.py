@@ -25,23 +25,22 @@ view.add(neutron_plot)
 line_plot = scene.visuals.Line(color="cyan", width=1)
 view.add(line_plot)
 
-# nuclei
-nuclei, _ = create_nuclei()
-nuclei_pos = np.array([n.position for n in nuclei])
+# -------------------------
+# INITIAL STATE
+# -------------------------
 
+neutrons, next_id = create_initial_neutrons()
+nuclei, tree = create_nuclei()
+
+trajectories = {}
+
+nuclei_pos = np.array([n.position for n in nuclei])
 nuclei_plot = scene.visuals.Markers()
 nuclei_plot.set_data(nuclei_pos, face_color="red", size=3)
 view.add(nuclei_plot)
 
 # -------------------------
-# STATE
-# -------------------------
-
-neutrons, next_id = create_initial_neutrons()
-trajectories = {}
-
-# -------------------------
-# UPDATE
+# UPDATE LOOP
 # -------------------------
 
 def update(event):
@@ -52,9 +51,9 @@ def update(event):
 
     for _ in range(SIM_STEPS_PER_FRAME):
 
-        neutrons, next_id, positions = run_transport_step(
+        neutrons, next_id, positions, f, a, s = run_transport_step(
             neutrons,
-            None,
+            tree,   # 🔥 FIX: NIE None
             next_id,
             trajectories
         )
@@ -62,7 +61,11 @@ def update(event):
         all_positions.extend(positions)
 
         if len(neutrons) == 0:
-            neutrons, next_id = create_initial_neutrons(next_id)
+            neutrons, next_id = create_initial_neutrons()
+
+    # -------------------------
+    # render neutrons
+    # -------------------------
 
     if all_positions:
         neutron_plot.set_data(
@@ -71,10 +74,15 @@ def update(event):
             size=4
         )
 
+    # -------------------------
+    # render trails
+    # -------------------------
+
     all_lines = []
 
     for traj in trajectories.values():
         if len(traj) > 1:
+
             filtered = [p for p, life in traj if life > 0]
 
             if len(filtered) > 1:
@@ -83,6 +91,10 @@ def update(event):
     if all_lines:
         line_plot.set_data(np.vstack(all_lines))
 
+
+# -------------------------
+# RUN
+# -------------------------
 
 timer = app.Timer(interval=1/60, connect=update, start=True)
 
