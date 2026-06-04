@@ -22,9 +22,6 @@ from config import (
     MAX_STEPS
 )
 
-# =========================================================
-# INITIALIZATION
-# =========================================================
 
 def create_initial_neutrons(next_id=0):
     neutrons = []
@@ -52,10 +49,6 @@ def create_nuclei():
     return nuclei, tree
 
 
-# =========================================================
-# ONE SIMULATION STEP (USED BY VISPY)
-# =========================================================
-
 def run_transport_step(neutrons, tree, next_id, trajectories):
 
     new_neutrons = []
@@ -67,19 +60,16 @@ def run_transport_step(neutrons, tree, next_id, trajectories):
 
     for n in neutrons:
 
-        # move
         n.position = move_neutron(n.position, n.direction)
 
         if not is_inside_reactor(n.position):
             continue
 
-        # trajectory (position + lifetime)
         traj = trajectories.setdefault(n.id, [])
         traj.append((n.position.copy(), TRAIL_LIFETIME))
 
         current_positions.append(n.position.copy())
 
-        # collision check (KDTree fast proximity)
         hits = tree.query_ball_point(n.position, r=NUCLEUS_INTERACTION_RADIUS)
 
         if len(hits) == 0:
@@ -96,11 +86,9 @@ def run_transport_step(neutrons, tree, next_id, trajectories):
             scatterings += 1
             new_neutrons.append(n)
 
-    # limits (stability)
     if len(new_neutrons) > MAX_NEUTRONS:
         new_neutrons = new_neutrons[:MAX_NEUTRONS]
 
-    # decay trajectories
     for tid in list(trajectories.keys()):
         new_traj = []
 
@@ -116,10 +104,6 @@ def run_transport_step(neutrons, tree, next_id, trajectories):
 
     return new_neutrons, next_id, current_positions, fissions, absorptions, scatterings
 
-
-# =========================================================
-# SINGLE FULL SIMULATION (USED BY MONTE CARLO)
-# =========================================================
 
 def run_single_simulation():
 
@@ -147,45 +131,68 @@ def run_single_simulation():
         total_absorptions += a
         total_scatterings += s
 
-        # simple k_eff estimator
         if len(neutrons) > 0:
             k_estimates.append(len(neutrons))
 
         if len(neutrons) == 0:
             break
 
-    k_eff = np.mean(k_estimates) if k_estimates else 0.0
+    k_estimates = np.array(k_estimates)
 
-    return k_eff, total_fissions, total_absorptions, total_scatterings
+    if len(k_estimates) > 0:
+        k_mean = np.mean(k_estimates)
+        k_std = np.std(k_estimates)
+        k_se = k_std / np.sqrt(len(k_estimates))
+    else:
+        k_mean, k_std, k_se = 0.0, 0.0, 0.0
+
+    return k_mean, k_std, k_se, total_fissions, total_absorptions, total_scatterings
+
 
 def run_monte_carlo(n_runs=100):
 
     k_values = []
+    k_stds = []
+    k_ses = []
+
     fissions_list = []
     absorptions_list = []
     scatterings_list = []
 
     for i in range(n_runs):
 
-        k_eff, f, a, s = run_single_simulation()
+        k_mean, k_std, k_se, f, a, s = run_single_simulation()
 
-        k_values.append(k_eff)
+        k_values.append(k_mean)
+        k_stds.append(k_std)
+        k_ses.append(k_se)
+
         fissions_list.append(f)
         absorptions_list.append(a)
         scatterings_list.append(s)
 
-        print(f"Run {i}: k_eff={k_eff:.4f}, f={f}, a={a}, s={s}")
+        print(f"Run {i}: k_eff={k_mean:.4f}, f={f}, a={a}, s={s}")
+
+    k_values = np.array(k_values)
+    k_ses = np.array(k_ses)
 
     results = {
-        "k_eff": np.array(k_values),
+        "k_eff": k_values,
+        "k_std": np.array(k_stds),
+        "k_se": k_ses,
         "fissions": np.array(fissions_list),
         "absorptions": np.array(absorptions_list),
         "scatterings": np.array(scatterings_list),
     }
 
-    print("\n=== MONTE CARLO SUMMARY ===")
-    print(f"Average k_eff: {results['k_eff'].mean():.4f}")
-    print(f"Std k_eff: {results['k_eff'].std():.4f}")
+    print("\n=== SUMMARY ===")
+    print(f"Mean k_eff: {k_values.mean():.4f}")
+    print(f"Std k_eff: {k_values.std():.4f}")
+
+    ci_low = k_values.mean() - 1.96 * k_values.std()
+    ci_high = k_values.mean() + 1.96 * k_values.std()
+
+    print(f"95% CI approximate: [{ci_low:.4f}, {ci_high:.4f}]")
     print(f"Runs: {n_runs}")
 
     return results
