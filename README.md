@@ -14,6 +14,9 @@ Model obejmuje:
 ---
 
 ## Uruchomienie projektu
+### 0. Biblioteki + wersja Python
+- Projekt tworzony był w Python 3.11
+- Biblioteki wraz z wersjami znajdują się w pliku `requirements.txt`
 
 ### 1. Seria symulacji Monte Carlo (analiza statystyczna)
 ```
@@ -131,14 +134,4 @@ Plik konfiguracyjny parametrów modelu:
     - TRAIL_LIFETIME – czas życia śladu neutronu
     - MAX_TRAIL_PER_NEUTRON – maksymalna długość śladu
     - SIM_STEPS_PER_FRAME – liczba kroków symulacji na klatkę animacji
-
-
-
-🧪 Uwagi końcowe
-Projekt jest modelem typu Monte Carlo (toy model), nie wiernym symulatorem fizycznym reaktora jądrowego.
-Głównym celem jest demonstracja:
-procesów stochastycznych,
-symulacji cząstek,
-analizy statystycznej wyników,
-wizualizacji dynamicznych systemów losowych.
 
