@@ -1,7 +1,6 @@
 numpy
 scipy
-numba
 matplotlib
-pyvista
-tqdm
 pandas
+vispy
+pyqt6
