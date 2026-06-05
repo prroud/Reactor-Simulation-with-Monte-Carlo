@@ -37,11 +37,11 @@ Spowoduje to wykonanie N niezależnych symulacji, a następnie wygenerowanie sta
 ```
 python vispy_engine.py
 ```
-Otwiera to interaktywną wizualizację 3D procesu transportu neutronów w czasie rzeczywistym.
+Otwiera to interaktywną wizualizację 3D procesu transportu neutronów w czasie rzeczywistym. 
 
-(lewy przycisk myszy + ruch myszą = zmiana pozycji kamery 
-\
-scroll = przybliżanie / oddalanie)
+Sterowanie:
+- lewy przycisk myszy + ruch myszą = zmiana pozycji kamery 
+- scroll = przybliżanie / oddalanie
 
 **Uwaga!**
 \
