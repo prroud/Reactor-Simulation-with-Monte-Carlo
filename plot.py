@@ -32,7 +32,6 @@ def plot_monte_carlo_results(results):
     plt.legend()
     plt.grid(True)
 
-    # --- time series ---
     plt.figure()
     plt.plot(runs, k_eff, marker="o")
     plt.axhline(1.0, linestyle="--", label="critical k=1")
