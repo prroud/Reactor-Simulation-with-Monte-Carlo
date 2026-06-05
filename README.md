@@ -135,3 +135,5 @@ Plik konfiguracyjny parametrów modelu:
     - MAX_TRAIL_PER_NEUTRON – maksymalna długość śladu
     - SIM_STEPS_PER_FRAME – liczba kroków symulacji na klatkę animacji
 
+Zmiana wartości parametrów prowadzi do istotnych zmian w dynamice układu oraz estymowanej wartości współczynnika mnożenia neutronów \(k_{eff}\).
+
